@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ScalaCompilerConfiguration">
+    <option name="separateProdTestSources" value="true" />
+    <profile name="sbt 1" modules="441homework2,441homework2.main,441homework2.test,cs441-homework2,cs441-homework2.main,cs441-homework2.test" />
+  </component>
+</project>
