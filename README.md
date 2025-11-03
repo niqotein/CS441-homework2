@@ -2,14 +2,14 @@
 
 * **Author**: `Pranay Dhopate`
 * **Email**: `pdhop@uic.edu`
-
+* **YT Video**: [Video Link](https://youtu.be/7Pq5vegbT2g)
 ## Project Overview
 
 This project is the second stage in a three-homework pipeline to build a complete Retrieval-Augmented Generation (RAG) system.  
 Homework 1 created a **batch MapReduce RAG indexer**.  
 Homework 2 upgrades the pipeline into a **continuous incremental indexing system** using:
 
-- **Apache Spark**
+- **Visit the [Spark Documentation](https://spark.apache.org/docs/latest/)**
 - **Delta Lake**
 - **Ollama Embeddings**
 - **SBT + Scala**
