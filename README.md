@@ -9,10 +9,23 @@ This project is the second stage in a three-homework pipeline to build a complet
 Homework 1 created a **batch MapReduce RAG indexer**.  
 Homework 2 upgrades the pipeline into a **continuous incremental indexing system** using:
 
-- **Visit the [Spark Documentation](https://spark.apache.org/docs/latest/)**
-- **Delta Lake**
-- **Ollama Embeddings**
-- **SBT + Scala**
+## Tech Stack & Versions
+
+| Component | Version | Notes |
+|---|---|---|
+| **Scala** | 2.13.x | Language for Spark + Delta application |
+| **SBT** | 1.x | Build & dependency management |
+| **Java (OpenJDK)** | 11 | Required by Spark/Delta |
+| **Apache Spark** | 3.4.x | Distributed processing engine |
+| **Delta Lake** | 2.4.0 | ACID storage & MERGE operations |
+| **Ollama** | Latest (CPU) | Local embedding server |
+| **Embedding Model** | `mxbai-embed-large` v1.3.0 | Pulled via `ollama pull mxbai-embed-large` |
+| **PDF Processing** | Apache PDFBox 2.0.x | Text extraction from PDFs |
+| **Config Loader** | Typesafe Config | Externalized config management |
+| **Logging** | Scala-logging | Structured logging for pipeline steps |
+| **Testing** | ScalaTest 3.2.x | Unit & integration tests |
+
+
 
 The goal is to efficiently maintain a document → chunk → embedding index as PDFs are added, updated, or removed — without reprocessing unchanged data.
 
@@ -221,15 +234,4 @@ Run on EMR | `spark-submit …` |
 
 ---
 
-## Acknowledgements
-
-This project uses:
-
-- Apache Spark
-- Delta Lake
-- Ollama
-- PDFBox
-- Scala & SBT
-
----
 
