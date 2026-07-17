@@ -73,3 +73,6 @@ build/
 
 ### Scala ###
 .bsp/
+
+# Private grader feedback — not for public upload
+feedback.md

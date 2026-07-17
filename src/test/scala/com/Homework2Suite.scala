@@ -138,20 +138,22 @@ class Homework2Suite extends AnyFunSuite {
   }
 
   /**
-   * TEST 5: Incremental "No-Op" (No Change) Scenario
+   * TEST 5: Empty Delta tables report zero rows
    *
-   * This test simulates a pipeline run where no source files have changed.
-   *
-   * WHY IT'S IMPORTANT (HW2): A core goal of HW2 is to be efficient
-   * and "perform near-zero work" when nothing has changed. This test
-   * asserts that if we run the pipeline against an already-processed
-   * corpus, the delta tables (chunks, embeddings) do not grow.
-   * (A more advanced test would use mocks or counters to prove that
-   * the `OllamaClient.embed` function was not called).
+   * NOTE ON SCOPE: despite the name implying an end-to-end idempotency check,
+   * this test does not invoke `Main`'s actual pipeline logic at all — it only
+   * creates two empty Delta tables and asserts their row counts stay at 0.
+   * It does not prove that a real no-op rerun of `Main` skips embedding or
+   * leaves the tables unchanged; it only confirms Delta reads/writes behave
+   * as expected on empty tables. A stronger version of this test would run
+   * `Main`'s pipeline twice against a fixed corpus and assert that
+   * `OllamaClient.embed` is not invoked (e.g. via a mock/counter) on the
+   * second run — the true idempotency guarantee is currently verified
+   * manually, not by this suite (see README's "Known Limitations" section).
    */
-  test("5. Incremental mode does no work when no changes detected") {
+  test("5. Empty Delta tables report zero rows (not an end-to-end idempotency check)") {
     val tmpChunkTbl = "./target/test-chunks"
-    val tmpEmbedTbl = "./target.test-embeddings"
+    val tmpEmbedTbl = "./target/test-embeddings"
 
     // --- State 1: Create empty tables (simulating a clean slate) ---
     spark.range(0).write.format("delta").mode("overwrite").save(tmpChunkTbl)

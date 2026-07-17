@@ -1,4 +1,4 @@
-# CS 441 – Homework 2: Incremental Delta RAG Indexer (Spark + Delta Lake + Ollama)
+# Incremental Delta RAG Indexer (Spark + Delta Lake + Ollama)
 
 * **Author**: `Pranay Dhopate`
 * **Email**: `pdhop@uic.edu`
@@ -203,9 +203,16 @@ Ollama embeddings | ✅
 - Text normalization
 - Chunk overlap logic
 - Delta MERGE semantics
-- No-op behavior
+- Empty Delta tables report zero rows (not a full end-to-end no-op pipeline check — see "Known Limitations" below)
 
+---
 
+## Known Limitations vs. Assignment Brief
+
+This section documents places where the current implementation intentionally or unintentionally falls short of the original assignment brief. These are recorded here rather than silently left undocumented.
+
+* **Embedding is sequential and driver-side, not batched across Spark workers.** The brief's own Spark pseudocode embeds via `mapPartitions { ... .grouped(64) ... }` with `foreachBatch` streaming, so embedding calls run in parallel on worker nodes. The actual pipeline instead `.collect()`s all chunk texts needing embeddings to the driver and calls `OllamaClient.embed` one blocking HTTP request at a time in a loop. Functionally correct at this sample corpus's scale, but won't scale to a large corpus — a scalability caveat, not a correctness bug.
+* **The "no-op" test doesn't exercise the real pipeline end-to-end.** `Homework2Suite.scala`'s Test 5 only creates two empty Delta tables and checks their row counts — it never calls `Main`'s actual pipeline logic, and doesn't assert `OllamaClient.embed` isn't invoked on a true no-op rerun. The idempotency guarantee itself *was* verified manually by running `sbt "runMain com.Main"` twice against the sample corpus (second run: 0 new docs, 0 chunks embedded, 100% dedup ratio) — just not by this automated test yet. A stronger test would mock/count `OllamaClient.embed` calls across two real pipeline runs.
 
 ## Conclusion
 

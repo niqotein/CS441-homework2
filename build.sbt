@@ -35,10 +35,6 @@ libraryDependencies ++= Seq(
   // from the MSRCorpus PDF files[cite: 1, 2].
   "org.apache.pdfbox" % "pdfbox" % "2.0.29",
 
-  // Apache Lucene: The library used to build the vector index (HNSW)
-  // for similarity search in the RAG pipeline[cite: 1, 2].
-  "org.apache.lucene" % "lucene-core" % "9.9.1",
-
   // --- Utility Dependencies (HW1) ---
 
   // Logback: The logging implementation, as required by HW1[cite: 1, 2].
@@ -90,3 +86,28 @@ dependencyOverrides += "com.fasterxml.jackson.core" % "jackson-databind" % "2.14
 
 // This tells SBT where to find the Delta Lake artifacts.
 resolvers += "Delta Lake" at "https://repo1.maven.org/maven2"
+
+// --- Fat-Jar Assembly (for AWS EMR deployment via `sbt clean assembly`) ---
+
+// Spark/Delta bring in duplicate META-INF service descriptors, module-info
+// classes, and native-library metadata across their transitive dependencies.
+// Without an explicit merge strategy, `sbt assembly` fails on those
+// duplicates instead of picking a sensible resolution.
+ThisBuild / assemblyMergeStrategy := {
+  case PathList("META-INF", "services", _*)             => MergeStrategy.concat
+  case PathList("META-INF", _*)                         => MergeStrategy.discard
+  case "module-info.class"                              => MergeStrategy.discard
+  case PathList("reference.conf")                       => MergeStrategy.concat
+  // commons-logging and jcl-over-slf4j both ship the same class names
+  // (jcl-over-slf4j is a drop-in replacement) — keep the first one found.
+  case PathList("org", "apache", "commons", "logging", _*) => MergeStrategy.first
+  // Multiple org.apache.arrow artifacts bundle an identically-named
+  // build-info properties file with differing (but irrelevant) contents.
+  case PathList(ps @ _*) if ps.last == "arrow-git.properties" => MergeStrategy.first
+  // spark-core vendors its own copy of the same .proto sources that
+  // protobuf-java also ships; either copy is fine at runtime.
+  case PathList(ps @ _*) if ps.last.endsWith(".proto")  => MergeStrategy.first
+  case x =>
+    val oldStrategy = (ThisBuild / assemblyMergeStrategy).value
+    oldStrategy(x)
+}
