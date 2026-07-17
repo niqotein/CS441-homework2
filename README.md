@@ -195,6 +195,18 @@ Normalized PDFs | ✅
 Chunking + overlap | ✅  
 Ollama embeddings | ✅
 
+### Manual End-to-End Verification
+
+Beyond the automated test suite, the incremental behavior itself was verified by running `sbt "runMain com.Main"` three times against the real Delta transaction log (`_delta_log`), starting from an empty `target/delta-tables/`:
+
+| Run | Corpus | Result |
+|---|---|---|
+| 1 | 2 PDFs | Full build: 2 docs indexed, 69 chunks embedded, retrieval index = 69 rows |
+| 2 | 4 PDFs (2 more added) | Delta detection correctly found only the 2 new docs: 2 docs processed, 58 new chunks embedded, retrieval index rebuilt to 127 rows (69 + 58) |
+| 3 | 4 PDFs (unchanged) | True no-op: Delta commit log shows `numTargetRowsInserted: 0`, `numTargetRowsUpdated: 0` on the doc/chunk/embedding tables, and **the retrieval index rebuild was skipped entirely** (no new `WRITE` entry in its transaction log) — confirming Step 7's conditional rebuild logic works, not just the embedding-skip logic |
+
+This confirms the idempotency guarantee holds under an actual corpus change (not just an all-empty no-op), which the automated `NoOpTableSpec` alone doesn't exercise (see "Known Limitations" below).
+
 ### Test Suite
 
 `src/test/scala/com/` is split into focused spec files by pipeline stage (28 tests total) rather than one monolithic suite:
