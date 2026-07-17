@@ -197,13 +197,17 @@ Ollama embeddings | ✅
 
 ### Test Suite
 
-`Homework2Suite.scala` validates:
+`src/test/scala/com/` is split into focused spec files by pipeline stage (28 tests total) rather than one monolithic suite:
 
-- Spark session init
-- Text normalization
-- Chunk overlap logic
-- Delta MERGE semantics
-- Empty Delta tables report zero rows (not a full end-to-end no-op pipeline check — see "Known Limitations" below)
+- `ConfigSpec` — `application.conf` values load correctly, nothing falls back to a hardcoded default
+- `TextNormalizerSpec` — whitespace/case normalization, NFC unicode normalization, idempotency
+- `ChunkerSpec` — sliding-window chunk geometry, and that `chunkId`/`contentHash` are deterministic and correctly scoped to doc identity vs. text content
+- `PdfExtractionSpec` — real PDF text extraction against a sample corpus file, and graceful handling of invalid PDF bytes
+- `EmbeddingJsonSpec` — `SingleEmbedRequest`/`SingleEmbedResponse` Circe codecs match Ollama's actual JSON shape
+- `OllamaEmbeddingSpec` — real HTTP calls to a local Ollama instance: vector dimension, batch ordering, distinct embeddings for distinct text, graceful failure on an invalid model
+- `SparkSessionSpec` — the shared local SparkSession starts with Delta Lake extensions loaded
+- `DeltaMergeSpec` — `MERGE` correctly updates changed docs and inserts new ones
+- `NoOpTableSpec` — empty Delta tables report zero rows (not a full end-to-end no-op pipeline check — see "Known Limitations" below)
 
 ---
 
@@ -212,7 +216,7 @@ Ollama embeddings | ✅
 This section documents places where the current implementation intentionally or unintentionally falls short of the original assignment brief. These are recorded here rather than silently left undocumented.
 
 * **Embedding is sequential and driver-side, not batched across Spark workers.** The brief's own Spark pseudocode embeds via `mapPartitions { ... .grouped(64) ... }` with `foreachBatch` streaming, so embedding calls run in parallel on worker nodes. The actual pipeline instead `.collect()`s all chunk texts needing embeddings to the driver and calls `OllamaClient.embed` one blocking HTTP request at a time in a loop. Functionally correct at this sample corpus's scale, but won't scale to a large corpus — a scalability caveat, not a correctness bug.
-* **The "no-op" test doesn't exercise the real pipeline end-to-end.** `Homework2Suite.scala`'s Test 5 only creates two empty Delta tables and checks their row counts — it never calls `Main`'s actual pipeline logic, and doesn't assert `OllamaClient.embed` isn't invoked on a true no-op rerun. The idempotency guarantee itself *was* verified manually by running `sbt "runMain com.Main"` twice against the sample corpus (second run: 0 new docs, 0 chunks embedded, 100% dedup ratio) — just not by this automated test yet. A stronger test would mock/count `OllamaClient.embed` calls across two real pipeline runs.
+* **The "no-op" test doesn't exercise the real pipeline end-to-end.** `NoOpTableSpec` only creates two empty Delta tables and checks their row counts — it never calls `Main`'s actual pipeline logic, and doesn't assert `OllamaClient.embed` isn't invoked on a true no-op rerun. The idempotency guarantee itself *was* verified manually by running `sbt "runMain com.Main"` twice against the sample corpus (second run: 0 new docs, 0 chunks embedded, 100% dedup ratio) — just not by this automated test yet. A stronger test would mock/count `OllamaClient.embed` calls across two real pipeline runs.
 
 ## Conclusion
 

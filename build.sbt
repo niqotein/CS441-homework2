@@ -12,7 +12,11 @@ val deltaVersion = "2.4.0"
 
 lazy val root = (project in file("."))
   .settings(
-    name := "441homework2"
+    name := "441homework2",
+    // Several spec files share one JVM-wide local SparkSession (see
+    // TestSparkSession) and/or write to the same ./target/test-* Delta table
+    // paths; running suites in parallel risks flaky concurrent access to both.
+    Test / parallelExecution := false
   )
 
 // This block defines all external libraries your project depends on.
@@ -71,7 +75,7 @@ libraryDependencies ++= Seq(
   // --- Testing Dependencies (HW1/HW2) ---
 
   // ScalaTest: The testing framework used for your unit tests
-  // (e.g., `Homework2Suite.scala`).
+  // (see the focused spec files under src/test/scala/com/).
   // Both homeworks require tests.
   "org.scalatest" %% "scalatest" % "3.2.18" % "test",
 )
